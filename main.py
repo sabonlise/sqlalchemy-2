@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect
+from flask import Flask, render_template, redirect, abort, request, session
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import PasswordField, BooleanField, SubmitField, StringField
@@ -67,7 +67,7 @@ def main():
         names = {name.id: (name.surname, name.name) for name in users}
         return render_template("index.html", jobs=jobs, names=names)
 
-    @app.route('/addjob', methods=['GET', 'POST'])
+    @app.route('/jobs', methods=['GET', 'POST'])
     @login_required
     def add_job():
         form = JobsForm()
@@ -85,6 +85,50 @@ def main():
             return redirect('/')
         return render_template('job.html', title='Adding a Job',
                                form=form)
+
+    @app.route('/jobs/<int:id>', methods=['GET', 'POST'])
+    @login_required
+    def edit_jobs(id):
+        form = JobsForm()
+        if request.method == "GET":
+            session = db_session.create_session()
+            jobs = session.query(Jobs).filter(Jobs.id == id,
+                                              Jobs.user == current_user).first()
+            if jobs:
+                form.title.data = jobs.job
+                form.teamlead_id.data = jobs.team_leader
+                form.work_size.data = jobs.work_size
+                form.collaborators.data = jobs.collaborators
+            else:
+                abort(404)
+        if form.validate_on_submit():
+            session = db_session.create_session()
+            jobs = session.query(Jobs).filter(Jobs.id == id,
+                                              Jobs.user == current_user).first()
+            if jobs:
+                jobs.job = form.title.data
+                jobs.team_leader = int(form.teamlead_id.data)
+                jobs.work_size = int(form.work_size.data)
+                jobs.collaborators = form.collaborators.data
+                jobs.is_finished = form.is_finished.data
+                session.commit()
+                return redirect('/')
+            else:
+                abort(404)
+        return render_template('job.html', title='Editing a Job', form=form)
+
+    @app.route('/jobs_delete/<int:id>', methods=['GET', 'POST'])
+    @login_required
+    def jobs_delete(id):
+        session = db_session.create_session()
+        jobs = session.query(Jobs).filter(Jobs.id == id,
+                                          Jobs.user == current_user).first()
+        if jobs:
+            session.delete(jobs)
+            session.commit()
+        else:
+            abort(404)
+        return redirect('/')
 
     app.run()
 
