@@ -3,6 +3,9 @@
 {% block content %}
 <meta charset="UTF-8">
 <h2 align="center">Works log</h2>
+{% if current_user.is_authenticated %}
+    <a href="jobs" class="btn btn-secondary">Add job</a>
+{% endif %}
 {% for job in jobs %}
 <h3>Action # {{ job.id }}</h3>
 <div class="table_container">
@@ -25,10 +28,15 @@
             <td class="ordinary" bgcolor="#ffeeff" align="center">Is not finished</td>
             {% endif %}
         </tr>
-
     </table>
+    <br>
+    {% if current_user.is_authenticated and current_user == job.user or current_user == 1 %}
+        <div>
+            <a href="/jobs/{{ job.id }}" class="btn btn-warning">Edit job</a>
+            <a href="/jobs_delete/{{ job.id }}" class="btn btn-danger">Delete job</a>
+        </div>
+    {% endif %}
 </div>
-<br>
 {% endfor %}
-
+<br>
 {% endblock %}
